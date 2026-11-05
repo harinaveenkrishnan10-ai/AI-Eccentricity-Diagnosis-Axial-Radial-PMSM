@@ -1,0 +1,29 @@
+# Environments & Secrets
+.env
+*.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Model Weights & Large Checkpoints
+*.pkl
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+
+# OS & IDE Artefacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

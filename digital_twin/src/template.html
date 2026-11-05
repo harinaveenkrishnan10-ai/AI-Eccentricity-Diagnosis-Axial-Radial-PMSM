@@ -1,0 +1,110 @@
+<meta charset="utf-8"><title>Twin-Electra Machine Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<script>@@plotly.min.js@@</script>
+<script>@@xlsx.full.min.js@@</script>
+<script>@@jszip.min.js@@</script>
+<style>
+/* Layout: a control room. Left rail = teach the twin + feed it a file. Right = the twin and its readout. One deliberate dark look. */
+:root{
+  --bg:#070d16; --panel:#0b1626; --panel2:#0e1d31; --line:#1b3350; --fg:#e6eefb; --muted:#8ea7c4;
+  --accent:#38bdf8; --ok:#22d3a6; --warn:#fbbf24; --alert:#fb923c; --crit:#ef4444;
+  --disp:"Rajdhani","Segoe UI","Arial Narrow",sans-serif; --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:radial-gradient(1100px 520px at 8% -8%,#0e2a47 0%,rgba(14,42,71,0) 60%),radial-gradient(900px 460px at 100% 0,#123a3a 0%,rgba(18,58,58,0) 55%),var(--bg);
+  color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:max(16px,2.2vw);padding-block:18px 48px;min-height:100%}
+h1,h2,h3{font-family:var(--disp);margin:0;letter-spacing:.4px}
+button{font:inherit;cursor:pointer;color:var(--fg)}
+button:focus-visible,label:focus-within,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:14px;padding:12px 18px;background:linear-gradient(135deg,#0c1b2e,#0b2433 60%,#0c2a2a)}
+.brand{font-family:var(--disp);font-weight:700;font-size:clamp(1.5rem,4vw,2.1rem);line-height:1;background:linear-gradient(90deg,#38bdf8,#22d3a6 45%,#fbbf24);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--muted);font-size:.9rem;margin-top:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.8rem;border:1px solid #24405f;background:#0d2036;color:#bcd3ee}
+.chip.on{border-color:#1f7a63;color:#7ff0cf;background:#0b2a26}.chip.off{border-color:#7a5a1f;color:#f0cf7f;background:#2a220b}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 14px;font-family:var(--disp);font-size:1rem;letter-spacing:.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#04141c;font-weight:700}
+.grid{display:grid;grid-template-columns:minmax(290px,350px) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.rail{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:14px 16px;min-width:0}
+.card h3{font-size:.95rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.3px;margin-bottom:6px}
+.kpi{font-family:var(--disp);font-weight:700;font-size:2rem;line-height:1.1}
+.small{color:var(--muted);font-size:.84rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:11px 16px;min-height:44px;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:#04141c}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.drop{border:2px dashed #2a4a6b;border-radius:12px;padding:22px 14px;text-align:center;background:var(--panel2);transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:#10304a}
+.drop.locked{opacity:.5;pointer-events:none}
+.drop b{display:block;font-family:var(--disp);font-size:1.2rem;margin-bottom:2px}
+.prog{height:8px;border-radius:99px;background:#12263e;overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#22d3a6);transition:width .2s}
+.log{font-family:var(--mono);font-size:.76rem;color:var(--muted);max-height:120px;overflow:auto;margin-top:8px;white-space:pre-wrap}
+details summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+.adv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.adv label{display:flex;flex-direction:column;font-size:.78rem;color:var(--muted);gap:3px}
+.adv input{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px;font:inherit;min-width:0}
+.verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:1px solid;border-radius:16px;padding:16px 22px}
+.pill{padding:6px 14px;border-radius:999px;font-weight:700;letter-spacing:1.3px;font-size:.8rem;color:#06101c}
+.verdict .big{font-family:var(--disp);font-weight:700;font-size:clamp(1.4rem,3.4vw,2rem);line-height:1.1}
+.note{border-left:4px solid var(--warn);background:#2a220b;color:#f6e3a1;padding:8px 14px;border-radius:8px;margin-top:8px;font-size:.9rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+.tabs{display:flex;gap:4px;margin-top:16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{background:transparent;border:0;border-bottom:3px solid transparent;padding:9px 14px;font-family:var(--disp);font-size:1.05rem;letter-spacing:.5px;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.pane{margin-top:14px}.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.plot{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--muted);font-weight:500}
+.scroll{overflow-x:auto}
+.demo{border-color:#7a5a1f}.demo .chip{margin:2px}
+select,input[type=number],input[type=text]{font:inherit}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="top">
+  <div><div class="brand">TWIN-ELECTRA 2026</div><div class="sub">Digital Twin Machine Arena · eccentricity diagnosis for permanent-magnet machines</div></div>
+  <div class="chips">
+    <div class="seg" role="group" aria-label="Machine twin">
+      <button id="mAxial" aria-pressed="true" type="button">Axial flux PMSM</button>
+      <button id="mRadial" aria-pressed="false" type="button">Radial flux PMSM</button>
+    </div>
+    <span id="statusChip" class="chip off">twin offline</span>
+  </div>
+</div>
+
+<div class="grid">
+  <aside class="rail">
+    <section class="card" id="teachCard" aria-live="polite"></section>
+    <section class="card">
+      <h3>2 · Feed the twin</h3>
+      <div class="drop locked" id="drop">
+        <b>Drop a new test file here</b>
+        <div class="small" style="margin-bottom:10px">stator currents · .xls .xlsx .csv · several files at once are fine</div>
+        <label class="btn ghost" for="testFiles">Choose file(s)</label>
+        <input id="testFiles" type="file" multiple accept=".xls,.xlsx,.csv,.txt" hidden>
+      </div>
+      <div class="small" id="feedMsg" style="margin-top:8px">Teach the twin first (step 1).</div>
+      <details style="margin-top:12px"><summary>Advanced settings</summary>
+        <div class="adv">
+          <label for="optW">Window (samples)<input id="optW" type="number" value="1024" min="128" step="128"></label>
+          <label for="optS">Hop (samples)<input id="optS" type="number" value="128" min="16" step="16"></label>
+          <label for="optFs">Sampling rate override [Hz]<input id="optFs" type="number" value="0" min="0"></label>
+          <label style="grid-column:1/-1;flex-direction:row;align-items:center;gap:8px;color:var(--fg)"><input id="optRnn" type="checkbox" checked style="width:auto"> Also train LSTM, BiLSTM, GRU and CNN-LSTM (slower, about a minute more)</label>
+          <label for="optCh">Current columns (1 = first column)<input id="optCh" type="text" placeholder="auto, e.g. 2,3,4"></label>
+        </div>
+        <div class="small" style="margin-top:8px">Used the next time you teach the twin. The sampling rate is read from the time column, so leave it at 0 unless your file has none.</div>
+      </details>
+    </section>
+  </aside>
+
+  <main id="main" style="min-width:0"></main>
+</div>
+
+<script>@@app.js@@</script>
